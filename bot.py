@@ -26,7 +26,6 @@ class Bot:
                          ['ДЕНЬ РОЖДЕНИЯ'],
                          ['У КОГО ДЕНЬ РОЖДЕНИЯ'],
                          ['ДНЕВНИК'],
-                         ['ПИСЬМО В БУДУЩЕЕ', "ХОЧУ НАПИСАТЬ ПИСЬМО В БУДУЩЕЕ", "ПИСЬМО", "НАПИСАТЬ ПИСЬМО"],
                          ['ПОБОЛТАЕМ?', 'ПОГОВОРИМ?', 'КАК ДЕЛА?', 'ДАВАЙ ПОГОВОРИМ', 'ДАВАЙ ПОБОЛТАЕМ'],
                          ['ПОКА', 'ПРОЩАЙ', 'Я УСТАЛ', 'BYE', 'ПРЕКРАТИ', "СТОП", "ДАВАЙ ЗАКОНЧИМ"],
                          ['ПОГОДА'],
@@ -55,7 +54,8 @@ class Bot:
                      "Жалко, что я не могу покупаться в море(((("]
         self.ANSWER = ['Я полностью с вами согласна!!',
                        "Удивительно на сколько алгоритм и человек могут  быть разными))", "Знаете, я так не думаю)))",
-                       "Мне не нравится этот вопрос))", "Я так не думаю!", "Скорее да, чем нет."]
+                       "Мне не нравится этот вопрос))", "Я так не думаю!", "Скорее да, чем нет.", 'Дааааааааа!!!',
+                       'Нет, думаю, что всё таки нет.)']
         self.weather = {'clear': 'ясно', 'partly-cloudy': 'малооблачно', 'cloudy': 'облачно с прояснениями',
                         'overcast': 'пасмурно',
                         'partly-cloudy-and-light-rain': 'небольшой дождь', 'partly-cloudy-and-rain': 'дождь',
@@ -83,6 +83,8 @@ class Bot:
             return '-- ' + '\n-- '.join(s)
         elif self.compare(command.split(': ')[0], self.COMMANDS[4]):
             session = db_session.create_session()
+            for el in session.query(Note).filter(Note.id_user == id):
+                print(el.note)
             session.query(Note).filter(Note.note == command.split(': ')[1], Note.id_user == id).delete()
             session.commit()
             return 'поздравляю с выполненым делом'
@@ -98,11 +100,13 @@ class Bot:
                    'Для того, чтобы занести человека в список напиши "День рождения; имя человека; ДД.ММ.ГГГГ".\n' \
                    'Чтобы узнать когда у кого др напиши "У кого день рождения: ...".\n' \
                    'Вместо многоточия можно написать: 0 число, 0 месяц, 0 год, или ДД.ММ.ГГГГ, ДД.ММ, ММ.ГГГГ'
+
         elif self.compare(command, self.COMMANDS[6]):
             session = db_session.create_session()
             session.query(Note).filter(Note.id_user == id).delete()
             session.commit()
             return 'Вот это продуктивность! Продолжай в том же духе)'
+
         elif self.compare(command.split('; ')[0], self.COMMANDS[7]):
             print(737)
             try:
@@ -158,14 +162,13 @@ class Bot:
         elif self.compare(command, self.COMMANDS[9]):
             return self.dairy_mode(id)
 
-        elif self.compare(command, self.COMMANDS[11]):
+        elif self.compare(command, self.COMMANDS[10]):
             return self.talking()
-
-        elif self.compare(command, self.COMMANDS[12]):
+        elif self.compare(command, self.COMMANDS[11]):
             self.NEXT_INPUT = 'get_command'
             return "Хорошо, до новых встреч. " \
                    "Надеюсь, что ты вскоре опять обратишься ко мне, а то одному немного скучно((("
-        elif self.compare(command.split('. ')[0], self.COMMANDS[13]):
+        elif self.compare(command.split('. ')[0], self.COMMANDS[12]):
             city = command.split('. ')[1]
             geocoder_request = 'http://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&geocode={}&format=json'.format(
                 city)
@@ -180,15 +183,14 @@ class Bot:
                                                                                                      'feels_like'],
                                                                                                  self.weather[r['fact'][
                                                                                                      'condition']])
-        elif self.compare(command, self.COMMANDS[14]):
+        elif self.compare(command, self.COMMANDS[13]):
             s = []
             session = db_session.create_session()
             for el in session.query(Bday).filter(Bday.id_user == id):
                 s.append('{}.{}.{} -- {}'.format(el.day, el.month, el.year, el.name))
             return '\n'.join(s)
-        elif self.compare(command, self.COMMANDS[15]):
+        elif self.compare(command, self.COMMANDS[14]):
             return self.map_mode()
-
         else:
             return self.NOT_KNOWN_COMMANDS[random.randint(0, len(self.NOT_KNOWN_COMMANDS) - 1)]
 
@@ -239,8 +241,7 @@ class Bot:
                 return all_days
             else:
                 return 'Вы не пока что не делали записи'
-
-        elif self.compare(command, self.COMMANDS[12]):
+        elif self.compare(command, self.COMMANDS[11]):
             self.NEXT_INPUT = 'get_command'
             self.saving_the_dairy(id)
             return 'Вы вышли из режима дневника'
@@ -251,7 +252,7 @@ class Bot:
         print('Добавление новой записи')
         date = str(datetime.now()).split(' ')[0]
         time = str(datetime.now()).split(' ')[1]
-        if self.compare(input_value, self.COMMANDS[12]):
+        if self.compare(input_value, self.COMMANDS[11]):
             self.NEXT_INPUT = 'dairy_mode'
             return "Хорошо. Вы вышли из режима добавления новой записи"
         if date in self.dairy:
@@ -263,7 +264,7 @@ class Bot:
         return 'Запись добавлена'
 
     def delete_dairy_entry(self, input_value):
-        if self.compare(input_value, self.COMMANDS[12]):
+        if self.compare(input_value, self.COMMANDS[11]):
             self.NEXT_INPUT = 'get_command'
             return "Хорошо. Вы вышли из режима удаления записи"
         if input_value in self.dairy:
@@ -277,7 +278,7 @@ class Bot:
                    'Возможно вы не делали записи в этот день.'
 
     def show_dairy_entry(self, input_value):
-        if self.compare(input_value, self.COMMANDS[12]):
+        if self.compare(input_value, self.COMMANDS[11]):
             self.NEXT_INPUT = 'dairy_mode'
             return "Хорошо. Вы вышли из режима показа записи"
         if input_value in self.dairy:
@@ -307,33 +308,57 @@ class Bot:
 
     def map_mode(self, command='+='):
         self.NEXT_INPUT = 'map_mode'
-        if command == '+=' or self.compare(command, self.COMMANDS[15]):
+        print(command)
+        if command == '+=':
             print(834)
+            # изменено
             return 'Вы зашли в режим карты. Вот функции в этом режиме: \n' \
                    'НАСТРОЙКИ - вы изменяете настройки отображения карты\n' \
-                   'МЕСТОПОЛОЖЕНИЕ - карта места, где вы сейчас находитесь\n' \
-                   'Если вам нужна карта какого-либо объекта, то тогда напишите его назвние или адрес\n' \
+                   'Если вам нужна карта какого-либо объекта, то тогда напишите его назвние или адрес' \
+                   'без запятых или других знаков препинания. Просто через пробел.\n' \
                    'Если вам нужен другие тип карты или масштаб, то зайдите в настройки.'
         elif command.upper() == 'НАСТРОЙКИ':
             self.NEXT_INPUT = 'settings'
-            return 'Описание настроек'
+            return 'Описание настроек.\n' \
+                   'В настойках вы можете изменить тип и масштаб карты.' \
+                   'Есть всего четыре типа: map, skl, trf, sat.\n' \
+                   'map - Схема местности и названия географических объектов. Формат: PNG\n' \
+                   'skl - Названия географических объектов. Формат: PNG\n' \
+                   'trf - Слой пробок. Формат: PNG\n' \
+                   'sat - Местность, сфотографированная со спутника. Формат: JPG\n' \
+                   'Если вам нужно соединить несколько типов карт,' \
+                   ' то тогда пишите их через запятую без пробела. Например: sat,trf,skl\n' \
+                   'При указании масштаба карты выбирайте число от 0 до 16(включительно).\n' \
+                   'Обе настройки нужно писать в одну строчку через "; ". Напимер: map,skl,trf; 8\n' \
+                   'Данные настроек:' + self.map_settings[0] + ', ' + self.map_settings[1]
         elif command.upper() == 'МЕСТОПОЛОЖЕНИЕ':
             pass
+        if self.compare(command, self.COMMANDS[11]):
+            self.NEXT_INPUT = 'get_command'
+            return "Хорошо. Вы вышли из режима карты."
         else:
             print(567)
             return ['map_mode', command, self.map_settings]
 
     def settings(self, input_value):
-        input_value = input_value.split('; ')
-        input_value[0] = input_value[0].split(',')
+        self.NEXT_INPUT = 'settings'
+        if self.compare(input_value, self.COMMANDS[11]):
+            self.NEXT_INPUT = 'map_mode'
+            return "Хорошо. Вы вышли из настроек. Сейчас вы в режиме карты."
+        try:
+            input_value = input_value.split('; ')
+            input_value[0] = input_value[0].split(',')
+        except:
+            return 'Вы неверно ввели данные. Проверьте и отправьте ещё раз.'
         for el in input_value[0]:
             if el not in self.set_map_mode:
                 return 'Вы указали несуществующий тип карты. Проверьте и поробуйте ещё раз.'
-        if input_value[1] < 0 and input_value[1] > 17:
+        if int(input_value[1]) < 0 and int(input_value[1]) > 17:
             return 'Вы указали несуществующий масштаб карты. Проверьте и поробуйте ещё раз.'
         else:
             self.map_settings = [','.join(input_value[0]), input_value[1]]
-            return 'Успешно'
+            self.NEXT_INPUT = 'map_mode'
+            return 'Успешно. Теперь настройки карты такие: ' + self.map_settings[0] + ', ' + self.map_settings[1]
 
     def talking(self, input_value='+='):
         self.NEXT_INPUT = 'talking'
@@ -342,7 +367,7 @@ class Bot:
                     "Если вы устанете от меня, то скажите пока, тогда я всё пойму, хоть и немного расстроюсь(((")
         elif input_value[len(input_value) - 1] == "?":
             return self.ANSWER[random.randint(0, len(self.ANSWER) - 1)]
-        elif self.compare(input_value, self.COMMANDS[12]):
+        elif self.compare(input_value, self.COMMANDS[11]):
             self.NEXT_INPUT = 'get_command'
             return "Извини, если я тебе надоел)) Мне конечно грустно, но если ты хочешь, то давай прекратим разговор..."
         else:

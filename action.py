@@ -5,7 +5,6 @@ import random
 from data import db_session
 from data.notes import Note
 from data.bdays import Bday
-import schedule
 import datetime
 import requests
 
@@ -24,12 +23,11 @@ def main():
         token=TOKEN)
 
     longpoll = VkBotLongPoll(vk_session, 194882917)
-
     for event in longpoll.listen():
         vk = vk_session.get_api()
         if event.type == VkBotEventType.MESSAGE_NEW and to_write_note:
             to_write_note = True
-            for el in event.obj.message['text'].split(';'):
+            for el in event.obj.message['text'].split('; '):
                 user = Note()
                 user.id_user = event.obj.message['from_id']
                 user.note = el
@@ -46,20 +44,21 @@ def main():
             print('Новое сообщение:')
             print('Для меня от:', event.obj.message['from_id'])
             print('Текст:', event.obj.message['text'])
+            answer = bot.update_command(event.obj.message['text'], event.obj.message['from_id'])
             if event.obj.message['text'].upper() == 'список' or event.obj.message['text'].upper() == 'TO DO LIST' or \
                     event.obj.message['text'].upper() == 'ДЕЛА':
                 to_write_note = True
-            elif bot.update_command(event.obj.message['text'], event.obj.message['from_id'])[0] != 'map_mode':
+            if answer[0] != 'map_mode':
                 print(666)
                 vk.messages.send(user_id=event.obj.message['from_id'],
-                                 message=bot.update_command(event.obj.message['text'], event.obj.message['from_id']),
+                                 message=answer,
                                  random_id=random.randint(0, 2 ** 64))
             else:
-                answer = bot.update_command(event.obj.message['text'], event.obj.message['from_id'])
                 answer[1] = '+'.join(answer[1].split(' '))
                 print(666)
                 geocoder_request = 'http://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&geocode={}&format=json'.format(
                     answer[1])
+                print(geocoder_request)
                 response = requests.get(geocoder_request)
                 if response:
                     json_response = response.json()
@@ -67,7 +66,7 @@ def main():
                     toponym_coodrinates = toponym["Point"]["pos"]
                     map_request = f"http://static-maps.yandex.ru/1.x/?" \
                         f"ll={','.join(toponym_coodrinates.split(' '))}&" \
-                        f"spn=0.002,0.002&l={answer[2][0]}&z={answer[2][1]}"
+                        f"l={answer[2][0]}&z={answer[2][1]}"
                     response = requests.get(map_request)
                     if response:
                         map_file = "map.png"
